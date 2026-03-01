@@ -15,7 +15,7 @@ class TetrisApp extends StatelessWidget {
       title: 'Tetris',
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF1a1a2e),
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
       ),
       home: const TetrisGame(),
       debugShowCheckedModeBanner: false,
@@ -48,58 +48,21 @@ class _TetrisGameState extends State<TetrisGame> {
 
   final Random random = Random();
 
-  // Tetromino shapes
-  final List<List<List<Offset>>> tetrominoes = [
-    // I
-    [
-      [Offset(0, 0), Offset(1, 0), Offset(2, 0), Offset(3, 0)],
-      [Offset(0, 0), Offset(0, 1), Offset(0, 2), Offset(0, 3)],
-      [Offset(0, 0), Offset(1, 0), Offset(2, 0), Offset(3, 0)],
-      [Offset(0, 0), Offset(0, 1), Offset(0, 2), Offset(0, 3)],
-    ],
-    // O
-    [
-      [Offset(0, 0), Offset(1, 0), Offset(0, 1), Offset(1, 1)],
-      [Offset(0, 0), Offset(1, 0), Offset(0, 1), Offset(1, 1)],
-      [Offset(0, 0), Offset(1, 0), Offset(0, 1), Offset(1, 1)],
-      [Offset(0, 0), Offset(1, 0), Offset(0, 1), Offset(1, 1)],
-    ],
-    // T
-    [
-      [Offset(0, 0), Offset(1, 0), Offset(2, 0), Offset(1, 1)],
-      [Offset(0, 0), Offset(0, 1), Offset(1, 1), Offset(0, 2)],
-      [Offset(0, 0), Offset(1, 0), Offset(2, 0), Offset(1, -1)],
-      [Offset(0, 0), Offset(0, -1), Offset(1, 0), Offset(0, 1)],
-    ],
-    // S
-    [
-      [Offset(1, 0), Offset(2, 0), Offset(0, 1), Offset(1, 1)],
-      [Offset(0, 0), Offset(0, 1), Offset(1, 1), Offset(1, 2)],
-      [Offset(1, 0), Offset(2, 0), Offset(0, 1), Offset(1, 1)],
-      [Offset(0, 0), Offset(0, 1), Offset(1, 1), Offset(1, 2)],
-    ],
-    // Z
-    [
-      [Offset(0, 0), Offset(1, 0), Offset(1, 1), Offset(2, 1)],
-      [Offset(0, 1), Offset(0, 0), Offset(1, 0), Offset(1, -1)],
-      [Offset(0, 0), Offset(1, 0), Offset(1, 1), Offset(2, 1)],
-      [Offset(0, 1), Offset(0, 0), Offset(1, 0), Offset(1, -1)],
-    ],
-    // J
-    [
-      [Offset(0, 0), Offset(0, 1), Offset(1, 1), Offset(2, 1)],
-      [Offset(0, 0), Offset(1, 0), Offset(2, 0), Offset(2, -1)],
-      [Offset(0, -1), Offset(1, -1), Offset(2, -1), Offset(2, 0)],
-      [Offset(0, 1), Offset(0, 0), Offset(1, 0), Offset(2, 0)],
-    ],
-    // L
-    [
-      [Offset(2, 0), Offset(0, 1), Offset(1, 1), Offset(2, 1)],
-      [Offset(0, 0), Offset(0, 1), Offset(0, 2), Offset(1, 0)],
-      [Offset(0, -1), Offset(1, -1), Offset(2, -1), Offset(0, 0)],
-      [Offset(1, 0), Offset(0, 0), Offset(0, -1), Offset(0, -2)],
-    ],
+  // Tetromino shapes - simplified without rotation states
+  final List<List<Offset>> tetrominoes = [
+    [Offset(0, 0), Offset(1, 0), Offset(2, 0), Offset(3, 0)], // I
+    [Offset(0, 0), Offset(1, 0), Offset(0, 1), Offset(1, 1)], // O
+    [Offset(0, 0), Offset(1, 0), Offset(2, 0), Offset(1, 1)], // T
+    [Offset(1, 0), Offset(2, 0), Offset(0, 1), Offset(1, 1)], // S
+    [Offset(0, 0), Offset(1, 0), Offset(1, 1), Offset(2, 1)], // Z
+    [Offset(0, 0), Offset(0, 1), Offset(1, 1), Offset(2, 1)], // J
+    [Offset(2, 0), Offset(0, 1), Offset(1, 1), Offset(2, 1)], // L
   ];
+
+  // Rotation transformations
+  List<Offset> rotatePiece(List<Offset> shape) {
+    return shape.map((b) => Offset(-b.dy, b.dx)).toList();
+  }
 
   final List<Color> colors = [
     Colors.cyan,    // I
@@ -144,11 +107,10 @@ class _TetrisGameState extends State<TetrisGame> {
   Tetromino createRandomPiece() {
     int index = random.nextInt(tetrominoes.length);
     return Tetromino(
-      shape: tetrominoes[index],
+      baseShape: tetrominoes[index],
       color: colors[index],
       x: 3,
       y: 0,
-      rotation: 0,
     );
   }
 
@@ -198,8 +160,8 @@ class _TetrisGameState extends State<TetrisGame> {
   void rotate() {
     if (gameOver || isPaused || currentPiece == null) return;
     setState(() {
-      int prevRotation = currentPiece!.rotation;
-      currentPiece!.rotation = (currentPiece!.rotation + 1) % 4;
+      List<Offset> prevShape = List.from(currentPiece!.currentShape);
+      currentPiece!.rotate();
       if (checkCollision()) {
         // Wall kick - try moving left or right
         currentPiece!.x--;
@@ -207,7 +169,7 @@ class _TetrisGameState extends State<TetrisGame> {
           currentPiece!.x += 2;
           if (checkCollision()) {
             currentPiece!.x--;
-            currentPiece!.rotation = prevRotation;
+            currentPiece!.currentShape = prevShape;
           }
         }
       }
@@ -401,7 +363,7 @@ class _TetrisGameState extends State<TetrisGame> {
                         iconSize: 40,
                       ),
                       IconButton(
-                        icon: const Icon(Icons.arrow_down, size: 40),
+                        icon: const Icon(Icons.keyboard_arrow_down, size: 40),
                         onPressed: () => moveDown(),
                         iconSize: 40,
                       ),
@@ -474,20 +436,28 @@ class _TetrisGameState extends State<TetrisGame> {
 }
 
 class Tetromino {
-  final List<List<List<Offset>>> shape;
+  final List<Offset> baseShape;
+  List<Offset> currentShape;
   final Color color;
-  int x, y, rotation;
+  int x, y;
 
   Tetromino({
-    required this.shape,
+    required this.baseShape,
     required this.color,
     required this.x,
     required this.y,
-    required this.rotation,
-  });
+  }) : currentShape = List.from(baseShape);
 
   List<Offset> getBlocks() {
-    return shape[rotation];
+    return currentShape;
+  }
+
+  void rotate() {
+    currentShape = currentShape.map((b) => Offset(-b.dy, b.dx)).toList();
+  }
+
+  void resetRotation() {
+    currentShape = List.from(baseShape);
   }
 }
 
