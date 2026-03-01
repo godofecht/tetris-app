@@ -33,7 +33,7 @@ class TetrisGame extends StatefulWidget {
 class _TetrisGameState extends State<TetrisGame> {
   static const int rows = 20;
   static const int cols = 10;
-  static const double blockSize = 30.0;
+  static const double blockSize = 28.0;
 
   List<List<Color?>> board = [];
   Tetromino? currentPiece;
@@ -44,7 +44,7 @@ class _TetrisGameState extends State<TetrisGame> {
   bool gameOver = false;
   bool isPaused = false;
   Timer? gameTimer;
-  Duration dropInterval = const Duration(milliseconds: 800);
+  Duration dropInterval = const Duration(milliseconds: 1200);
 
   final Random random = Random();
 
@@ -236,7 +236,7 @@ class _TetrisGameState extends State<TetrisGame> {
         linesCleared += lines;
         score += [0, 100, 300, 500, 800][lines] * level;
         level = (linesCleared / 10).floor() + 1;
-        dropInterval = Duration(milliseconds: max(100, 800 - (level - 1) * 100));
+        dropInterval = Duration(milliseconds: max(500, 1200 - (level - 1) * 50));
       });
       startTimer();
     }
@@ -269,151 +269,177 @@ class _TetrisGameState extends State<TetrisGame> {
         backgroundColor: const Color(0xFF16213e),
         elevation: 0,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Score and stats
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  buildStatBox('Score', '$score'),
-                  buildStatBox('Level', '$level'),
-                  buildStatBox('Lines', '$linesCleared'),
-                ],
-              ),
-            ),
-            // Game area
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Main game board
-                  GestureDetector(
-                    onTap: () => hardDrop(),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white30, width: 2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: CustomPaint(
-                        size: Size(cols * blockSize, rows * blockSize),
-                        painter: BoardPainter(board, currentPiece, blockSize),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  // Next piece and controls
-                  Column(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                // Score and stats
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      // Next piece preview
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white30),
-                          borderRadius: BorderRadius.circular(8),
+                      buildStatBox('Score', '$score'),
+                      buildStatBox('Level', '$level'),
+                      buildStatBox('Lines', '$linesCleared'),
+                    ],
+                  ),
+                ),
+                // Game area
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Main game board
+                        GestureDetector(
+                          onTap: () => hardDrop(),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.white30, width: 2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: CustomPaint(
+                              size: Size(cols * blockSize, rows * blockSize),
+                              painter: BoardPainter(board, currentPiece, blockSize),
+                            ),
+                          ),
                         ),
-                        child: Column(
+                        const SizedBox(width: 16),
+                        // Next piece and controls
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text('NEXT', style: TextStyle(fontWeight: FontWeight.bold)),
+                            // Next piece preview
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.white30),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Text('NEXT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  const SizedBox(height: 4),
+                                  SizedBox(
+                                    width: 100,
+                                    height: 100,
+                                    child: CustomPaint(
+                                      painter: NextPiecePainter(nextPiece, 20),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            // Control buttons
+                            SizedBox(
+                              width: 80,
+                              child: ElevatedButton(
+                                onPressed: togglePause,
+                                child: Text(isPaused ? 'Resume' : 'Pause', style: const TextStyle(fontSize: 12)),
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             SizedBox(
-                              width: 120,
-                              height: 120,
-                              child: CustomPaint(
-                                painter: NextPiecePainter(nextPiece, 25),
+                              width: 80,
+                              child: ElevatedButton(
+                                onPressed: startGame,
+                                child: const Text('Restart', style: TextStyle(fontSize: 12)),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Control buttons
-                      ElevatedButton(
-                        onPressed: togglePause,
-                        child: Text(isPaused ? 'Resume' : 'Pause'),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: startGame,
-                        child: const Text('Restart'),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ),
-            // Mobile controls
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.rotate_left, size: 40),
-                    onPressed: rotate,
-                    iconSize: 40,
-                  ),
-                  Row(
+                ),
+                // Mobile controls
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_left, size: 40),
-                        onPressed: () => moveLeft(),
-                        iconSize: 40,
+                        icon: const Icon(Icons.rotate_left),
+                        onPressed: rotate,
+                        iconSize: 36,
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.arrow_left),
+                            onPressed: () => moveLeft(),
+                            iconSize: 36,
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints(),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.keyboard_arrow_down),
+                            onPressed: () => moveDown(),
+                            iconSize: 36,
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints(),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.arrow_right),
+                            onPressed: () => moveRight(),
+                            iconSize: 36,
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
                       ),
                       IconButton(
-                        icon: const Icon(Icons.keyboard_arrow_down, size: 40),
-                        onPressed: () => moveDown(),
-                        iconSize: 40,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.arrow_right, size: 40),
-                        onPressed: () => moveRight(),
-                        iconSize: 40,
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.keyboard_double_arrow_down, size: 40),
-                    onPressed: hardDrop,
-                    iconSize: 40,
-                  ),
-                ],
-              ),
-            ),
-            // Game over overlay
-            if (gameOver)
-              Container(
-                color: Colors.black54,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'GAME OVER',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Final Score: $score',
-                        style: const TextStyle(fontSize: 24),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: startGame,
-                        child: const Text('Play Again'),
+                        icon: const Icon(Icons.keyboard_double_arrow_down),
+                        onPressed: hardDrop,
+                        iconSize: 36,
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(),
                       ),
                     ],
                   ),
                 ),
+              ],
+            ),
+          ),
+          // Game over overlay
+          if (gameOver)
+            Container(
+              color: Colors.black54,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'GAME OVER',
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Final Score: $score',
+                      style: const TextStyle(fontSize: 24),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: startGame,
+                      child: const Text('Play Again'),
+                    ),
+                  ],
+                ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
